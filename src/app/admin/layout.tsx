@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 
 const adminNavItems = [
@@ -17,13 +17,14 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode
 }) {
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) return redirect('/')
+  const supabase = await createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/')
 
   const { data: userRole } = await supabase
     .from('user_roles')
     .select('roles(name)')
-    .eq('user_id', session.user.id)
+    .eq('user_id', user.id)
     .eq('status', 'active')
     .single()
 
@@ -32,6 +33,7 @@ export default async function AdminLayout({
 
   async function signOut() {
     'use server'
+    const supabase = await createServerSupabaseClient()
     await supabase.auth.signOut()
     redirect('/')
   }
@@ -109,7 +111,7 @@ export default async function AdminLayout({
               <div className="w-8 h-8 rounded-full bg-brand-blue/10 flex items-center justify-center text-brand-blue font-semibold text-xs">
                 A
               </div>
-              <span>{session.user.email}</span>
+              <span>{user.email}</span>
             </div>
             <div className="w-2 h-2 rounded-full bg-green-500" title="Online" />
           </div>

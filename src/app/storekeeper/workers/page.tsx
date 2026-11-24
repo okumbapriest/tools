@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { searchWorkers, createWorker, updateWorker } from '@/lib/queries'
+import { searchWorkers, getAllWorkers, createWorker, updateWorker } from '@/lib/queries'
 import type { Worker } from '@/types/database'
 
 export default function WorkersPage() {
@@ -24,19 +24,15 @@ export default function WorkersPage() {
 
   useEffect(() => {
     loadWorkers()
-  }, [])
+  }, [search])
 
   async function loadWorkers() {
     setLoading(true)
     try {
-      const result = search.trim() ? await searchWorkers(search) : []
-      // Also get all workers when no search
-      if (!search.trim()) {
-        const { data } = await import('@/lib/supabase').then(m => m.supabase.from('workers').select('*').order('full_name'))
-        setWorkers(data ?? [])
-      } else {
-        setWorkers(result)
-      }
+      const result = search.trim()
+        ? await searchWorkers(search)
+        : await getAllWorkers()
+      setWorkers(result)
     } catch (e) {
       console.error('Failed to load workers', e)
     } finally {
@@ -103,7 +99,7 @@ export default function WorkersPage() {
             type="text"
             placeholder="Search by worker name, ID or phone..."
             value={search}
-            onChange={(e) => { setSearch(e.target.value); loadWorkers() }}
+            onChange={(e) => setSearch(e.target.value)}
             className="form-input pl-10"
           />
         </div>

@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 
 const storekeeperNavItems = [
@@ -20,13 +20,14 @@ export default async function StorekeeperLayout({
 }: {
   children: React.ReactNode
 }) {
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) return redirect('/')
+  const supabase = await createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/')
 
   const { data: userRole } = await supabase
     .from('user_roles')
     .select('roles(name)')
-    .eq('user_id', session.user.id)
+    .eq('user_id', user.id)
     .eq('status', 'active')
     .single()
 
@@ -35,6 +36,7 @@ export default async function StorekeeperLayout({
 
   async function signOut() {
     'use server'
+    const supabase = await createServerSupabaseClient()
     await supabase.auth.signOut()
     redirect('/')
   }
@@ -43,7 +45,7 @@ export default async function StorekeeperLayout({
   const { data: userProfile } = await supabase
     .from('users')
     .select('full_name, email')
-    .eq('id', session.user.id)
+    .eq('id', user.id)
     .single()
 
   const displayName = userProfile?.full_name || userProfile?.email?.split('@')[0] || 'Storekeeper'

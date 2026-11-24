@@ -1,6 +1,6 @@
 'use server'
 
-import { supabase } from './supabase'
+import { createServerSupabaseClient } from './supabase/server'
 import type {
   Worker, Tool, Issue, Return, Transfer, DamageRecord, Repair,
   ActivityLog, Site, DashboardStats, TodayMovements
@@ -10,10 +10,11 @@ import type {
 // DASHBOARD STATS
 // ============================================================
 export async function getDashboardStats(): Promise<DashboardStats> {
+  const supabase = await createServerSupabaseClient()
   const { data: tools } = await supabase
     .from('tools')
     .select('total_quantity, available_quantity, issued_quantity, damaged_quantity, under_repair_quantity, missing_quantity')
-    .eq('status', 'active') // tools don't have a status column — this is a placeholder
+    
 
   const { count: totalWorkers } = await supabase
     .from('workers')
@@ -42,6 +43,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 }
 
 export async function getTodayMovements(): Promise<TodayMovements> {
+  const supabase = await createServerSupabaseClient()
   const today = new Date().toISOString().split('T')[0]
   const [issueRes, returnRes] = await Promise.all([
     supabase.from('issues').select('*', { count: 'exact', head: true }).gte('created_at', today),
@@ -56,7 +58,18 @@ export async function getTodayMovements(): Promise<TodayMovements> {
 // ============================================================
 // WORKERS
 // ============================================================
+export async function getAllWorkers(): Promise<Worker[]> {
+  const supabase = await createServerSupabaseClient()
+  const { data, error } = await supabase
+    .from('workers')
+    .select('*')
+    .order('full_name')
+  if (error) throw error
+  return data ?? []
+}
+
 export async function searchWorkers(query: string): Promise<Worker[]> {
+  const supabase = await createServerSupabaseClient()
   const { data, error } = await supabase
     .from('workers')
     .select('*')
@@ -67,11 +80,13 @@ export async function searchWorkers(query: string): Promise<Worker[]> {
 }
 
 export async function getWorker(workerId: string): Promise<Worker | null> {
+  const supabase = await createServerSupabaseClient()
   const { data } = await supabase.from('workers').select('*').eq('id', workerId).single()
   return data
 }
 
 export async function getWorkerProfile(id: string) {
+  const supabase = await createServerSupabaseClient()
   const { data: worker } = await supabase
     .from('workers')
     .select('*')
@@ -116,6 +131,7 @@ export async function getWorkerProfile(id: string) {
 }
 
 export async function createWorker(data: Omit<Worker, 'id' | 'created_at' | 'updated_at'>) {
+  const supabase = await createServerSupabaseClient()
   const { data: result, error } = await supabase
     .from('workers')
     .insert(data)
@@ -126,6 +142,7 @@ export async function createWorker(data: Omit<Worker, 'id' | 'created_at' | 'upd
 }
 
 export async function updateWorker(id: string, data: Partial<Worker>) {
+  const supabase = await createServerSupabaseClient()
   const { data: result, error } = await supabase
     .from('workers')
     .update({ ...data, updated_at: new Date().toISOString() })
@@ -140,6 +157,7 @@ export async function updateWorker(id: string, data: Partial<Worker>) {
 // TOOLS
 // ============================================================
 export async function searchTools(query: string) {
+  const supabase = await createServerSupabaseClient()
   const { data } = await supabase
     .from('tools')
     .select(`
@@ -153,6 +171,7 @@ export async function searchTools(query: string) {
 }
 
 export async function getTool(toolId: string) {
+  const supabase = await createServerSupabaseClient()
   const { data } = await supabase
     .from('tools')
     .select(`
@@ -166,6 +185,7 @@ export async function getTool(toolId: string) {
 }
 
 export async function getAllTools() {
+  const supabase = await createServerSupabaseClient()
   const { data } = await supabase
     .from('tools')
     .select('*, categories(name)')
@@ -174,6 +194,7 @@ export async function getAllTools() {
 }
 
 export async function createTool(data: any) {
+  const supabase = await createServerSupabaseClient()
   const { data: result, error } = await supabase
     .from('tools')
     .insert(data)
@@ -184,6 +205,7 @@ export async function createTool(data: any) {
 }
 
 export async function updateTool(id: string, data: any) {
+  const supabase = await createServerSupabaseClient()
   const { data: result, error } = await supabase
     .from('tools')
     .update({ ...data, updated_at: new Date().toISOString() })
@@ -198,6 +220,7 @@ export async function updateTool(id: string, data: any) {
 // ISSUES
 // ============================================================
 export async function createIssue(issueData: any, items: Array<{ tool_id: string; quantity: number }>) {
+  const supabase = await createServerSupabaseClient()
   const { data: issue, error } = await supabase
     .from('issues')
     .insert(issueData)
@@ -220,6 +243,7 @@ export async function getOutstandingTools(filters?: {
   site_id?: string
   status?: string
 }) {
+  const supabase = await createServerSupabaseClient()
   let query = supabase
     .from('issues')
     .select(`
@@ -243,6 +267,7 @@ export async function getOutstandingTools(filters?: {
 // RETURNS
 // ============================================================
 export async function getWorkerOutstandingItems(workerId: string) {
+  const supabase = await createServerSupabaseClient()
   const { data } = await supabase
     .from('issues')
     .select(`
@@ -266,6 +291,7 @@ export async function createReturn(returnData: any, items: Array<{
   condition: string
   inspection_notes?: string
 }>) {
+  const supabase = await createServerSupabaseClient()
   const { data: ret, error } = await supabase
     .from('returns')
     .insert(returnData)
@@ -285,6 +311,7 @@ export async function createReturn(returnData: any, items: Array<{
 // TRANSFERS
 // ============================================================
 export async function createTransfer(data: any) {
+  const supabase = await createServerSupabaseClient()
   const { data: result, error } = await supabase
     .from('transfers')
     .insert(data)
@@ -298,6 +325,7 @@ export async function createTransfer(data: any) {
 // DAMAGE & REPAIRS
 // ============================================================
 export async function reportDamage(data: any) {
+  const supabase = await createServerSupabaseClient()
   const { data: record, error } = await supabase
     .from('damage_records')
     .insert(data)
@@ -317,6 +345,7 @@ export async function reportDamage(data: any) {
 }
 
 export async function getDamagedAndRepairs() {
+  const supabase = await createServerSupabaseClient()
   const { data } = await supabase
     .from('damage_records')
     .select(`
@@ -337,6 +366,7 @@ export async function getActivityLogs(filters?: {
   dateTo?: string
   user_id?: string
 }) {
+  const supabase = await createServerSupabaseClient()
   let query = supabase
     .from('activity_logs')
     .select(`
@@ -359,6 +389,7 @@ export async function getActivityLogs(filters?: {
 // REPORTS (aggregated data for export)
 // ============================================================
 export async function getInventoryReport(periodDays: number) {
+  const supabase = await createServerSupabaseClient()
   const startDate = new Date()
   startDate.setDate(startDate.getDate() - periodDays)
 
@@ -391,6 +422,7 @@ export async function getInventoryReport(periodDays: number) {
 // STOREKEEPER CONTROL (Admin only)
 // ============================================================
 export async function getAppointedStorekeeper() {
+  const supabase = await createServerSupabaseClient()
   const { data } = await supabase
     .from('user_roles')
     .select(`
@@ -405,6 +437,7 @@ export async function getAppointedStorekeeper() {
 }
 
 export async function appointStorekeeper(userId: string, appointedById: string) {
+  const supabase = await createServerSupabaseClient()
   const { data, error } = await supabase
     .from('user_roles')
     .upsert({
@@ -421,6 +454,7 @@ export async function appointStorekeeper(userId: string, appointedById: string) 
 }
 
 export async function removeStorekeeper(userId: string) {
+  const supabase = await createServerSupabaseClient()
   const { data, error } = await supabase
     .from('user_roles')
     .update({ status: 'removed' })
@@ -435,6 +469,7 @@ export async function removeStorekeeper(userId: string) {
 // SITES
 // ============================================================
 export async function getSites(activeOnly = true) {
+  const supabase = await createServerSupabaseClient()
   const { data } = await supabase
     .from('sites')
     .select('*')
@@ -447,6 +482,7 @@ export async function getSites(activeOnly = true) {
 // CATEGORIES
 // ============================================================
 export async function getCategories() {
+  const supabase = await createServerSupabaseClient()
   const { data } = await supabase
     .from('categories')
     .select('*')

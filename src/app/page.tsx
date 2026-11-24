@@ -1,18 +1,19 @@
 import { redirect } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 
 export default async function Home() {
-  const { data: { session }, error } = await supabase.auth.getSession()
+  const supabase = await createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
-  if (session) {
+  if (user) {
     // Check role and redirect
     const { data: userRole } = await supabase
       .from('user_roles')
       .select(`
         roles(name)
       `)
-      .eq('user_id', session.user.id)
+      .eq('user_id', user.id)
       .eq('status', 'active')
       .single()
 
@@ -55,11 +56,31 @@ export default async function Home() {
 async function LoginCard() {
   async function login(formData: FormData) {
     'use server'
-    const email = formData.get('email') as string
-    const password = formData.get('password') as string
+
+    const supabase = await createServerSupabaseClient()
+    const email = String(formData.get('email') ?? '').trim().toLowerCase()
+    const password = String(formData.get('password') ?? '')
+
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) return
-    // Redirect handled by route protection middleware or useEffect
+    if (error) redirect('/?error=invalid_credentials')
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) redirect('/')
+
+    const { data: userRole } = await supabase
+      .from('user_roles')
+      .select('roles(name)')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .single()
+
+    const role = (userRole as any)?.roles?.name
+
+    if (role === 'admin') redirect('/admin/dashboard')
+    if (role === 'storekeeper') redirect('/storekeeper/dashboard')
+
+    await supabase.auth.signOut()
+    redirect('/?error=role_missing')
   }
 
   return (
