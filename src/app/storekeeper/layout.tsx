@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
-import Link from 'next/link'
+import PortalShell from '@/components/PortalShell'
 
 const storekeeperNavItems = [
   { label: 'Dashboard', href: '/storekeeper/dashboard', icon: 'M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z' },
@@ -51,90 +51,8 @@ export default async function StorekeeperLayout({
   const displayName = userProfile?.full_name || userProfile?.email?.split('@')[0] || 'Storekeeper'
 
   return (
-    <div className="flex h-screen bg-slate-50">
-      {/* Sidebar */}
-      <aside className="w-64 bg-brand-charcoal text-white flex flex-col flex-shrink-0">
-        {/* Logo */}
-        <div className="px-5 py-5 border-b border-white/10">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
-            </div>
-            <div>
-              <div className="font-bold text-base tracking-wide">TOOLROOM</div>
-              <div className="text-xs text-white/50">STOREKEEPER PORTAL</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 px-3 py-4 space-y-1 sidebar-nav overflow-y-auto">
-          {storekeeperNavItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 transition-colors duration-150"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
-              </svg>
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-
-        {/* Footer */}
-        <div className="px-5 py-4 border-t border-white/10">
-          <div className="flex items-center gap-2 text-xs text-white/40">
-            <span>TOOLROOM</span>
-            <span>|</span>
-            <span>Construction Tool Management System</span>
-          </div>
-          <div className="text-xs text-white/30 mt-1">v1.0.0</div>
-        </div>
-
-        {/* Logout */}
-        <form action={signOut} className="px-3 pb-4">
-          <button
-            type="submit"
-            className="flex items-center gap-3 w-full px-4 py-3 rounded-lg text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 transition-colors duration-150"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l-4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-            Logout
-          </button>
-        </form>
-      </aside>
-
-      {/* Main content */}
-      <main className="flex-1 overflow-y-auto">
-        {/* Top bar */}
-        <header className="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between sticky top-0 z-10">
-          <div>
-            <h1 className="text-lg font-semibold text-brand-charcoal">
-              Welcome, {displayName}
-            </h1>
-            <p className="text-sm text-slate-500">Manage the store. Keep track of every tool.</p>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <div className="text-sm font-medium text-charcoal">{displayName}</div>
-              <div className="text-xs text-muted">Storekeeper</div>
-            </div>
-            <div className="w-9 h-9 rounded-full bg-brand-blue/10 flex items-center justify-center text-brand-blue font-semibold text-sm">
-              {displayName.charAt(0).toUpperCase()}
-            </div>
-          </div>
-        </header>
-
-        {/* Page content */}
-        <div className="p-8">
-          {children}
-        </div>
-      </main>
-    </div>
+    <PortalShell portal="storekeeper" displayName={displayName} email={user.email} navItems={storekeeperNavItems} signOut={signOut}>
+      {children}
+    </PortalShell>
   )
 }
